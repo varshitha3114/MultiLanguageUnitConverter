@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Language Unit Converter</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    #title {
+  text-align: center;
+  font-size: 3rem; /* You can adjust this size as needed */
+  font-weight: bold;
+
+}
+
+    body {
+      font-family: 'Times New Roman', Times, serif; 
+      font-size: 2rem;
+    }
+    .container {
+         display: grid;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #f8f9fa;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .select-container {
+      display: grid;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .unit-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .button-container {
+      margin-top: 20px;
+      text-align: center;
+    }
+    #result {
+      font-size: 1.25rem;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 20px;
+    }
+    canvas {
+      margin-top: 40px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+     <div class="container">
+    <i><h1 id="title" >Multi-Language Unit Converter</h1></i><br>
+    <div class="select-container">
+      <select id="languageSwitcher" class="p-2 rounded"><br>
+        <option value="en">🇬🇧 English</option>
+        <option value="hi">🇮🇳 Hindi</option>
+        <option value="te">🇮🇳 Telugu</option>
+        
+        <option value="fr">🇫🇷 French</option>
+        <option value="ml">🇮🇳 Malayalam</option>
+        <option value="ta">🇮🇳 Tamil</option>
+        <option value="zh">🇨🇳 Chinese</option>
+        <option value="ko">🇰🇷 Korean</option>
+        <option value="th">🇹🇭 Thai</option>
+      </select>
+    </div>
+
+    <div class="unit-container">
+      <div>
+        <label id="select_unit_label" class="block mb-2 font-medium">Select Unit Type</label>
+        <select id="unitType" class="w-full p-2 border rounded">
+          <option value="length">Length</option>
+          <option value="weight">Weight</option>
+          <option value="temperature">Temperature</option>
+          <option value="volume">Volume</option>
+          <option value="speed">Speed</option>
+          <option value="time">Time</option>
+          <option value="pressure">Pressure</option>
+        </select>
+      </div>
+
+      <div>
+        <label id="input_value_label" class="block mb-2 font-medium">Enter Value</label>
+        <input type="number" id="inputValue" class="w-full p-2 border rounded" />
+      </div>
+
+      <div>
+        <label class="block mb-2 font-medium">From</label>
+        <select id="fromUnit" class="w-full p-2 border rounded"></select>
+      </div>
+
+      <div>
+        <label class="block mb-2 font-medium">To</label>
+        <select id="toUnit" class="w-full p-2 border rounded"></select>
+      </div>
+    </div>
+
+    <div class="button-container">
+      <button onclick="convertUnits()" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600" id="convert_btn">Convert</button>
+      <button onclick="speakResult()" class="ml-4 bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">🔊 Speak</button>
+    </div>
+
+    <div class="mt-4">
+      <p id="result" class="text-lg font-semibold"></p>
+    </div>
+
+    <div class="mt-6">
+      <canvas id="chartCanvas"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const units = {
+      length: ['meter', 'kilometer', 'inch', 'foot'],
+      weight: ['gram', 'kilogram', 'pound'],
+      temperature: ['Celsius', 'Fahrenheit', 'Kelvin'],
+      volume: ['liter', 'milliliter', 'gallon'],
+      speed: ['m/s', 'km/h', 'mile/h'],
+      time: ['seconds', 'minutes', 'hours', 'days'],
+      pressure: ['Pascal', 'atm', 'bar', 'psi']
+    };
+
+    const conversions = {
+      length: {
+        meter: 1,
+        kilometer: 0.001,
+        inch: 39.3701,
+        foot: 3.28084
+      },
+      weight: {
+        gram: 1,
+        kilogram: 0.001,
+        pound: 0.00220462
+      },
+      volume: {
+        liter: 1,
+        milliliter: 1000,
+        gallon: 0.264172
+      },
+      speed: {
+        'm/s': 1,
+        'km/h': 3.6,
+        'mile/h': 2.23694
+      },
+      time: {
+        seconds: 1,
+        minutes: 60,
+        hours: 3600,
+        days: 86400
+      },
+      pressure: {
+        Pascal: 1,
+        atm: 9.86923e-6,
+        bar: 1e-5,
+        psi: 0.000145038
+      }
+    };
+
+    const translations = {
+      en: {
+        title: "Multi-Language Unit Converter",
+        convert: "Convert",
+        select_unit: "Select Unit Type",
+        input_value: "Enter Value",
+        result: "Converted Value",
+        units: {
+          length: "Length",
+          weight: "Weight",
+          temperature: "Temperature",
+          volume: "Volume",
+          speed: "Speed",
+          time: "Time",
+          pressure: "Pressure"
+        }
+      },
+      hi: {
+        title: "बहुभाषी इकाई कनवर्टर",
+        convert: "परिवर्तित करें",
+        select_unit: "इकाई प्रकार चुनें",
+        input_value: "मूल्य दर्ज करें",
+        result: "परिवर्तित मान",
+        units: {
+          length: "लंबाई",
+          weight: "वजन",
+          temperature: "तापमान",
+          volume: "मात्रा",
+          speed: "गति",
+          time: "समय",
+          pressure: "दबाव"
+        }
+      },
+      te: {
+        title: "బహుభాషా యూనిట్ కన్వర్టర్",
+        convert: "మార్చు",
+        select_unit: "యూనిట్ రకాన్ని ఎంచుకోండి",
+        input_value: "విలువ నమోదు చేయండి",
+        result: "మార్చిన విలువ",
+        units: {
+          length: "పొడవు",
+          weight: "బరువు",
+          temperature: "వేడి",
+          volume: "పరిమాణం",
+          speed: "వేగం",
+          time: "సమయం",
+          pressure: "దబావు"
+        }
+      },
+      fr: {
+        title: "Convertisseur d'unités multilingue",
+        convert: "Convertir",
+        select_unit: "Sélectionner le type d'unité",
+        input_value: "Entrer la valeur",
+        result: "Valeur convertie",
+        units: {
+          length: "Longueur",
+          weight: "Poids",
+          temperature: "Température",
+          volume: "Volume",
+          speed: "Vitesse",
+          time: "Temps",
+          pressure: "Pression"
+        }
+      },
+      ml: {
+        title: "ബഹു ഭാഷാ യൂണിറ്റ് കണ്ടര്‍ട്ടർ",
+        convert: "മാറ്റുക",
+        select_unit: "യൂണിറ്റ് ടൈപ്പ് തിരഞ്ഞെടുക്കുക",
+        input_value: "വാല്യു നൽകുക",
+        result: "മാറ്റിയ മൂല്യം",
+        units: {
+          length: "ഇലായം",
+          weight: "ഭാരം",
+          temperature: "താപനില",
+          volume: "മാത്ര",
+          speed: "വേഗം",
+          time: "സമയം",
+          pressure: "ദബവ്"
+        }
+      },
+      ta: {
+        title: "பல மொழி அளவு மாற்றி",
+        convert: "மாற்று",
+        select_unit: "அளவு வகையைத் தேர்வு செய்",
+        input_value: "மதிப்பு உள்ளிடவும்",
+        result: "மாற்றிய மதிப்பு",
+        units: {
+          length: "நீளம்",
+          weight: "எடை",
+          temperature: "வெப்பநிலை",
+          volume: "அளவு",
+          speed: "வேகம்",
+          time: "நேரம்",
+          pressure: "பிரசுரம்"
+        }
+      },
+      zh: {
+        title: "多语言单位转换器",
+        convert: "转换",
+        select_unit: "选择单位类型",
+        input_value: "输入值",
+        result: "转换后的值",
+        units: {
+          length: "长度",
+          weight: "重量",
+          temperature: "温度",
+          volume: "体积",
+          speed: "速度",
+          time: "时间",
+          pressure: "压力"
+        }
+      },
+      ko: {
+        title: "다국어 단위 변환기",
+        convert: "변환",
+        select_unit: "단위 유형 선택",
+        input_value: "값 입력",
+        result: "변환된 값",
+        units: {
+          length: "길이",
+          weight: "무게",
+          temperature: "온도",
+          volume: "부피",
+          speed: "속도",
+          time: "시간",
+          pressure: "압력"
+        }
+      },
+      th: {
+        title: "เครื่องแปลงหน่วยหลายภาษา",
+        convert: "แปลง",
+        select_unit: "เลือกประเภทหน่วย",
+        input_value: "ป้อนค่า",
+        result: "ค่าที่แปลงแล้ว",
+        units: {
+          length: "ความยาว",
+          weight: "น้ำหนัก",
+          temperature: "อุณหภูมิ",
+          volume: "ปริมาตร",
+          speed: "ความเร็ว",
+          time: "เวลา",
+          pressure: "ความดัน"
+        }
+      }
+    };
+
+    function updateLanguage(lang) {
+      const t = translations[lang];
+      document.getElementById('title').innerText = t.title;
+      document.getElementById('select_unit_label').innerText = t.select_unit;
+      document.getElementById('input_value_label').innerText = t.input_value;
+      document.getElementById('convert_btn').innerText = t.convert;
+      document.getElementById('languageSwitcher').value = lang;
+      document.getElementById('result').innerText = t.result;
+
+      // Update unit type options
+      const unitTypeSelect = document.getElementById('unitType');
+      const unitsList = t.units;
+      for (let option of unitTypeSelect.options) {
+        option.innerText = unitsList[option.value];
+      }
+      
+      updateUnitDropdowns();
+    }
+
+    document.getElementById('languageSwitcher').addEventListener('change', e => {
+      updateLanguage(e.target.value);
+    });
+
+    document.getElementById('unitType').addEventListener('change', () => {
+      updateUnitDropdowns();
+    });
+
+    function updateUnitDropdowns() {
+      const type = document.getElementById('unitType').value;
+      const from = document.getElementById('fromUnit');
+      const to = document.getElementById('toUnit');
+      const unitOptions = units[type];
+
+      from.innerHTML = "";
+      to.innerHTML = "";
+
+      unitOptions.forEach(unit => {
+        const optionFrom = document.createElement('option');
+        const optionTo = document.createElement('option');
+        optionFrom.textContent = unit;
+        optionTo.textContent = unit;
+        from.appendChild(optionFrom);
+        to.appendChild(optionTo);
+      });
+    }
+
+    function convertUnits() {
+  const value = parseFloat(document.getElementById('inputValue').value);
+  const unitType = document.getElementById('unitType').value;
+  const fromUnit = document.getElementById('fromUnit').value;
+  const toUnit = document.getElementById('toUnit').value;
+
+  if (!value) {
+    document.getElementById('result').innerText = "Please enter a valid value!";
+    return;
+  }
+
+  let convertedValue;
+
+  if (unitType === 'temperature') {
+    let celsius;
+
+    // Convert the input value to Celsius first
+    if (fromUnit === 'Celsius') {
+      celsius = value;
+    } else if (fromUnit === 'Fahrenheit') {
+      celsius = (value - 32) * 5/9;
+    } else if (fromUnit === 'Kelvin') {
+      celsius = value - 273.15;
+    }
+
+    // Now convert Celsius to other units
+    if (toUnit === 'Celsius') {
+      convertedValue = celsius;
+    } else if (toUnit === 'Fahrenheit') {
+      convertedValue = (celsius * 9/5) + 32;
+    } else if (toUnit === 'Kelvin') {
+      convertedValue = celsius + 273.15;
+    }
+
+    document.getElementById('result').innerText = `${value} ${fromUnit} = ${convertedValue} ${toUnit}`;
+    displayChart(value, fromUnit, toUnit, celsius);
+  } else {
+    const conversionFactor = conversions[unitType][toUnit] / conversions[unitType][fromUnit];
+    convertedValue = value * conversionFactor;
+    document.getElementById('result').innerText = `${value} ${fromUnit} = ${convertedValue} ${toUnit}`;
+    displayChart(convertedValue, fromUnit, toUnit);
+  }
+}
+
+let chartInstance; // Declare globally to access and destroy it
+
+function displayChart(value, fromUnit, toUnit) {
+  const ctx = document.getElementById('chartCanvas').getContext('2d');
+  const unitType = document.getElementById('unitType').value;
+
+  // If a chart already exists, destroy it before creating a new one
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+
+  let chartData;
+  let chartType = 'bar';  // Default graph type
+
+  // Dynamically set chart data based on unit type
+  if (unitType === 'length') {
+    chartData = {
+      labels: [fromUnit, toUnit],
+      datasets: [{
+        label: 'Length Conversion',
+        data: [value, value * conversions.length[toUnit] / conversions.length[fromUnit]],
+        backgroundColor: ['#ff9999', '#66b3ff'],
+        borderColor: ['#ff6666', '#3399ff'],
+        borderWidth: 1
+      }]
+    };
+    chartType = 'bar';  // Bar chart for length
+
+  } else if (unitType === 'weight') {
+    chartData = {
+      labels: [fromUnit, toUnit],
+      datasets: [{
+        label: 'Weight Conversion',
+        data: [value, value * conversions.weight[toUnit] / conversions.weight[fromUnit]],
+        backgroundColor: ['#ff6666', '#66b3cc'],
+        borderColor: ['#ff4444', '#3399cc'],
+        borderWidth: 1
+      }]
+    };
+    chartType = 'line';  // Line chart for weight
+
+  } else if (unitType === 'temperature') {
+    let celsius, fahrenheit, kelvin;
+
+    // Convert the input value to Celsius first
+    if (fromUnit === 'Celsius') {
+      celsius = value;
+    } else if (fromUnit === 'Fahrenheit') {
+      celsius = (value - 32) * 5/9;
+    } else if (fromUnit === 'Kelvin') {
+      celsius = value - 273.15;
+    }
+
+    // Now convert Celsius to other units
+    fahrenheit = (celsius * 9/5) + 32;
+    kelvin = celsius + 273.15;
+
+    chartData = {
+      labels: ['Celsius', 'Fahrenheit', 'Kelvin'],
+      datasets: [{
+        label: 'Temperature Conversion',
+        data: [celsius, fahrenheit, kelvin],
+        backgroundColor: ['#ffcc99', '#ff6666', '#66b3ff'],
+        borderColor: ['#ff9933', '#ff4444', '#3399ff'],
+        borderWidth: 1
+      }]
+    };
+    chartType = 'line';  // Line chart for temperature
+
+  } else if (unitType === 'volume') {
+    chartData = {
+      labels: [fromUnit, toUnit],
+      datasets: [{
+        label: 'Volume Conversion',
+        data: [value, value * conversions.volume[toUnit] / conversions.volume[fromUnit]],
+        backgroundColor: ['#ffb3b3', '#66b3cc'],
+        borderColor: ['#ff6666', '#3399cc'],
+        borderWidth: 1
+      }]
+    };
+    chartType = 'bar';  // Bar chart for volume
+
+  } else if (unitType === 'speed') {
+    chartData = {
+      labels: ['m/s', 'km/h', 'mile/h'],
+      datasets: [{
+        label: 'Speed Conversion',
+        data: [
+          value, 
+          value * 3.6, // m/s to km/h
+          value * 2.23694 // m/s to miles/h
+        ],
+        backgroundColor: ['#99cc99', '#ffcc99', '#ff6666'],
+        borderColor: ['#66b366', '#ff9933', '#ff4444'],
+        borderWidth: 1
+      }]
+    };
+    chartType = 'line';  // Line chart for speed
+
+  } else if (unitType === 'time') {
+    chartData = {
+      labels: ['Seconds', 'Minutes', 'Hours'],
+      datasets: [{
+        label: 'Time Conversion',
+        data: [
+          value, 
+          value / 60, // Seconds to minutes
+          value / 3600 // Seconds to hours
+        ],
+        backgroundColor: ['#99ccff', '#ffccff', '#ff6666'],
+        borderColor: ['#3399ff', '#ff66cc', '#ff4444'],
+        borderWidth: 1
+      }]
+    };
+    chartType = 'line';  // Line chart for time
+
+  } else if (unitType === 'pressure') {
+    chartData = {
+      labels: ['Pascal', 'atm', 'bar', 'psi'],
+      datasets: [{
+        label: 'Pressure Conversion',
+        data: [
+          value, 
+          value * 9.86923e-6, // Pascal to atm
+          value * 1e-5, // Pascal to bar
+          value * 0.000145038 // Pascal to psi
+        ],
+        backgroundColor: ['#ff9999', '#66ccff', '#ffcc66', '#99cc99'],
+        borderColor: ['#ff6666', '#3399ff', '#ff9966', '#66b366'],
+        borderWidth: 1
+      }]
+    };
+    chartType = 'bar';  // Bar chart for pressure
+  }
+
+  // Create the chart with dynamic chart data and type
+  chartInstance = new Chart(ctx, {
+    type: chartType,
+    data: chartData
+  });
+}
+function speakResult() {
+  const resultText = document.getElementById('result').innerText;
+  
+  if (resultText) {
+    const speech = new SpeechSynthesisUtterance(resultText);  // Create speech utterance
+    speech.lang = 'en';  // Set the language (you can dynamically change this based on selected language)
+    
+    // You can modify properties like rate, pitch, and volume as needed
+    speech.rate = 1;  // Speed of speech
+    speech.pitch = 1; // Pitch of voice
+    speech.volume = 1; // Volume level (0 to 1)
+
+    // Speak the result
+    window.speechSynthesis.speak(speech);
+  } else {
+    console.log('No result to speak');
+  }
+}
+
+
+  </script>
+</body>
+</html>
